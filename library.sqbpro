@@ -2,29 +2,41 @@
 FROM Books
 WHERE title like '%dracula%'
 
---- book being loaned
+--- Identify which Dracula book is being loaned
+--- To answer this, look up for book title Dracula, since there are many copies of Dracula in the system.
+--- Then look for the loan record where there is no returned date which indicate it is being loaned
 select b.BookID
 from Books b
 join loans l
 on l.BookID=b.BookID
 where b.Title like '%dracula%' and l.ReturnedDate is NULL
 
---- is available
+--- Check for the available Dracula copies
+--- In the subquery, retrieve the BookID in Loans record where there is no Returned Date.
+--- Retrieve all columns for Books record where the Book ID is not in the subquery result.
 select * FROM Books
 where title like '%dracula%'
 and BookID not in (select b.BookID
 from Books b
 join loans l
 on l.BookID=b.BookID
-where b.Title like '%dracula%' and l.ReturnedDate is NULL)</sql><sql name="SQL 2">-- add data 
+where b.Title like '%dracula%' and l.ReturnedDate is NULL)
+
+-- Adding new copies to the library database
 INSERT INTO Books(Title, Author, Published, Barcode)
 VALUES ('Dracula','Bram Stoker',1897,4819277482), ('Gulliver''s Travels', 'Jonathan Swift',1792,4899254401)
 
 SELECT * FROM Books
 where Barcode in (4819277482, 4899254401)
 
+--- Updating the book's title
 UPDATE Books set title='Gulliver''s Travels'
-WHERE Barcode=4899254401</sql><sql name="SQL 3">-- check existing customer record
+WHERE Barcode=4899254401
+
+--- Request to add a new loan record for patron name Jack and the 2 books with given barcodes.
+-- First, check the existing customer ID with the provided details
+-- Then, in the subquery, look for the Book ID with the matching barcode
+--- Insert data in Loans table with Loan Date, Due Date, Patron ID from the first step and the Book ID in the subquery
 select * from Patrons
 where FirstName='Jack' and Email='jvaan@wisdompets.com'
 
@@ -34,13 +46,19 @@ VALUES
 ('2022-08-25','2022-09-08',50,(SELECT BookID FROM Books WHERE Barcode=4043822646))
 
 select * from Loans
-WHERE DueDate = '2022-09-08' and PatronID=50</sql><sql name="SQL 4">/*Check the record of loan that is due on July 13th 2022
-*/
+WHERE DueDate = '2022-09-08' and PatronID=50
+
+----Check all loan record that is due on or after July 13th 2022
+----With due date in on Loans table, and patron details on Patron table, look up details where due date is
+--- greater than or equal to July 13th 2022
+
 select p.FirstName, p.LastName, p.Email, b.Title, b.Author, l.LoanID, l.LoanDate, l.DueDate, l.ReturnedDate
 FROM Patrons p 
 join Loans l on l.PatronID=p.PatronID
 join Books b on l.BookID=b.BookID
-WHERE (l.DueDate&gt; '2022-07-13' or l.DueDate= '2022-07-13' ) and l.ReturnedDate is null</sql><sql name="SQL 5">/* Update return date for all book with the provided barcode*/
+WHERE (l.DueDate>'2022-07-13' or l.DueDate= '2022-07-13' ) and l.ReturnedDate is null
+
+/* Update return date for all book with the provided barcode*/
 update Loans set ReturnedDate='2022-07-05'
 where BookID in 
 (SELECT BookID from Books where Barcode in (6435968624, 5677520613, 8730298424))
@@ -48,18 +66,24 @@ and ReturnedDate is NULL
 
 -- check record
 SELECT * FROM Loans
-where ReturnedDate='2022-07-05'</sql><sql name="SQL 6">/* List of patron who borrow the least*/
+where ReturnedDate='2022-07-05'
+
+/* List of patron who borrow the least*/
 SELECT count(l.LoanID) as 'Borrow quantity', p.FirstName, p.LastName, p.Email
 FROM Loans l , Patrons p
 WHERE l.PatronID=p.PatronID
 GROUP by l.PatronID 
 ORDER by count(LoanID) asc 
-limit 10</sql><sql name="SQL 7">
+limit 10
+
+
 /* All available book published in 1890s*/
 select  BookID, Title, Author, Published,  Barcode from Books
 where (Published BETWEEN 1890 and 1899) 
 and BookID not in (SELECT BookID from Loans where ReturnedDate is null)
-ORDER by Published</sql><sql name="SQL 8">/* How many books were published each year, without duplication*/
+ORDER by Published
+
+/* How many books were published each year, without duplication*/
 select count(Published), Published 
 FROM (select DISTINCT Title, Published FROM Books) 
 group by Published 
